@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded',()=>{
      <p id="uploadStatus" role="status"></p>
    </div>
  </details>`;
+ root.PeladoInsights?.mount(filter);
  const cfg=root.PELADO_REMOTE||{};$('#retention').textContent=cfg.retentionDays||90;$('#remoteStatus').textContent=cfg.uploadEndpoint?'Integración configurada. El envío requiere internet y validación antiabuso.':'Modo local: envío desactivado. Falta configurar y desplegar el endpoint protegido.';
  $('#excelFile').addEventListener('change',e=>readFile(e.target.files[0]));
  ['dragenter','dragover'].forEach(ev=>$('#dropzone').addEventListener(ev,e=>{e.preventDefault();$('#dropzone').classList.add('drag');}));
@@ -141,7 +142,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  $('#sheetSelect').addEventListener('change',parseSheet);['excelSearch','employeeFilter','periodFilter'].forEach(id=>$('#'+id).addEventListener(id==='excelSearch'?'input':'change',filter));
  $('#clearExcel').addEventListener('click',()=>{data=[];filtered=[];workbook=null;original=null;warnings=[];reportMeta={};localStorage.removeItem('peladoClaroData');$('#excelReport').hidden=true;$('#sheetField').hidden=true;$('#excelFile').value='';$('#uploadStatus').textContent='';});
  $('#pdfExcel').addEventListener('click',()=>{try{createPDF(filtered).save('informe-pelado.pdf');}catch(e){error(e.message);}});$('#uploadExcel').addEventListener('click',upload);
- $('#excelBody').addEventListener('click',e=>{const b=e.target.closest('[data-row]');if(!b)return;const r=filtered[Number(b.dataset.row)];$('#excelDetail').innerHTML=`<div class="notice"><h3>Fila ${r.sourceRow||'importada'}</h3>${Object.entries(r).map(([k,v])=>`<p><strong>${esc(k)}</strong>: ${esc(v??'—')}</p>`).join('')}</div>`;});
+ $('#excelBody').addEventListener('click',e=>{const b=e.target.closest('[data-row]');if(!b)return;const r=filtered[Number(b.dataset.row)];$('#excelDetail').innerHTML=`<div class="notice"><h3>Fila ${r.sourceRow||'importada'}</h3>${Object.entries(r).filter(([k])=>!['entryTimestamp','exitTimestamp'].includes(k)).map(([k,v])=>`<p><strong>${esc(({code:'Código',employee:'Empleado',date:'Fecha',product:'Producto',size:'Talla',sourceCategory:'Categoría original',category:'Categoría',entry:'Entrada',exit:'Salida',rawEntry:'Entrada original',rawExit:'Salida original',entryDate:'Fecha de entrada',exitDate:'Fecha de salida',pounds:'Libras',monthlyYield:'Rendimiento mensual',rate:'Tarifa USD/lb',pay:'Pago USD',sourceRow:'Fila de origen',sourceSheet:'Hoja de origen'})[k]||k)}</strong>: ${esc(v??'—')}</p>`).join('')}</div>`;});
  try{
    const saved=JSON.parse(localStorage.getItem('peladoClaroData')||'[]'),stored=Array.isArray(saved)?saved:saved.rows;
    if(Array.isArray(stored)&&stored.length){
@@ -162,7 +163,9 @@ function parseSheet(){
    const grid=root.XLSX.utils.sheet_to_json(workbook.Sheets[$('#sheetSelect').value],{header:1,defval:''});
    const parsed=parseRows(grid,{date1904:!!workbook.Workbook?.WBProps?.date1904});
    data=parsed.rows.sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')||(a.sourceRow-b.sourceRow));warnings=parsed.warnings;
+   data.forEach(r=>r.sourceSheet=$('#sheetSelect').value);
    reportMeta={declaredPeriod:parsed.declaredPeriod,declaredTotals:parsed.declaredTotals};
+   if($('#excelFrom')){$('#excelFrom').value='';$('#excelTo').value='';}
    try{localStorage.setItem('peladoClaroData',JSON.stringify({version:2,rows:data,reportMeta}));}catch{warnings.push('No se pudo guardar el análisis: almacenamiento lleno. Puedes descargar el PDF.');}
    $('#excelError').hidden=true;setupFilters();
  }catch(e){data=[];filtered=[];reportMeta={};$('#excelReport').hidden=true;error(e.message);}
@@ -174,11 +177,14 @@ function setupFilters(){
  $('#excelSearch').value='';$('#excelReport').hidden=false;filter();
 }
 function nextPeriodEnd(p){const [y,m]=p.split('-').map(Number);return PeladoCore.dateKey(new Date(y,m,20,12));}
-function filter(){const q=$('#excelSearch').value.toLowerCase(),employee=$('#employeeFilter').value,period=$('#periodFilter').value;filtered=data.filter(r=>(!employee||r.employee===employee)&&(!period||(period==='__undated__'?!r.date:!!r.date&&PeladoCore.periodOf(r.date)===period))&&[r.date,r.code,r.employee,r.product,r.size,r.category,r.sourceCategory].join(' ').toLowerCase().includes(q));render();}
+function filter(){const from=$('#excelFrom')?.value||'',to=$('#excelTo')?.value||'';const q=$('#excelSearch').value.toLowerCase(),employee=$('#employeeFilter').value,period=$('#periodFilter').value;filtered=data.filter(r=>(!from||(r.date&&r.date>=from))&&(!to||(r.date&&r.date<=to))&&(!employee||r.employee===employee)&&(!period||(period==='__undated__'?!r.date:!!r.date&&PeladoCore.periodOf(r.date)===period))&&[r.date,r.code,r.employee,r.product,r.size,r.category,r.sourceCategory].join(' ').toLowerCase().includes(q));render();}
 function render(){
  const t=totals(filtered),check=reconciliation(filtered,reportMeta,data.length);
  const noDate=filtered.filter(r=>!r.date).length,concepts=filtered.filter(r=>r.pounds===null).length;
  const notes=[...warnings];
+ if($('#excelFrom')?.value&&$('#excelTo')?.value&&$('#excelFrom').value>$('#excelTo').value)notes.push('La fecha inicial es posterior a la final. Ajusta el intervalo.');
+ const identities=filtered.map(r=>JSON.stringify([r.code,r.employee,r.date,r.product,r.size,r.sourceCategory,r.rawEntry,r.rawExit,r.pounds,r.monthlyYield,r.rate,r.pay])),counts=new Map();identities.forEach(k=>counts.set(k,(counts.get(k)||0)+1));const duplicates=identities.filter(k=>counts.get(k)>1).length;if(duplicates)notes.push(`${duplicates} filas pertenecen a posibles repeticiones exactas; se conservan porque pueden ser movimientos válidos.`);
+ if(filtered.some(r=>r.pounds!==null&&r.rate!==null&&r.pay!==null&&Math.abs(Math.round(r.pay*100)-Math.round(r.pounds*r.rate*100))>1))notes.push('Hay pagos que difieren de libras × tarifa en más de un centavo; se conservan los valores originales.');
  if(reportMeta.declaredPeriod)notes.push('Período indicado en el Excel: '+reportMeta.declaredPeriod+'.');
  notes.push(`${concepts} conceptos sin libras y ${noDate} movimientos sin fecha incluidos en esta selección.`);
  if(check)notes.push(check.difference===0?'El total declarado coincide con la suma de los movimientos.':`Total declarado ${money(check.declared)}; suma de movimientos ${money(check.calculated)}; diferencia ${money(check.difference)}. Se conservan ambos valores para revisión.`);
@@ -189,11 +195,12 @@ function render(){
  bars('#excelLbBars',Object.fromEntries(Object.entries(t.cats).filter(([,v])=>v.productionRows>0)),'lb');bars('#excelPayBars',t.cats,'pay');
  $('#excelCount').textContent=`${filtered.length} de ${data.length} movimientos. El PDF usa estos mismos filtros. Los filtros por período excluyen los conceptos sin fecha.`;
  $('#excelBody').innerHTML=filtered.map((r,i)=>`<tr><td>${esc(r.date||'Sin fecha')}</td><td>${esc(r.employee||'—')}</td><td>${esc(r.entry||'—')} → ${esc(r.exit||'—')}</td><td>${esc(r.product)}</td><td>${esc(r.size)}</td><td>${esc(r.category)}</td><td>${num(r.pounds)}</td><td>${money(r.rate)}</td><td>${money(r.pay)}</td><td><button class="btn btn-soft" data-row="${i}">Ver</button></td></tr>`).join('');
- $('#excelDetail').innerHTML='';$('#pdfExcel').disabled=!filtered.length;
+ $('#excelDetail').innerHTML='';$('#pdfExcel').disabled=!filtered.length;root.PeladoInsights?.render(filtered);
 }
 function bars(selector,cats,key){const max=Math.max(1,...Object.values(cats).map(c=>Math.abs(c[key])));$(selector).innerHTML=Object.entries(cats).map(([k,v])=>`<div class="bar-row"><span>${esc(k)}</span><div class="progress"><span style="width:${Math.abs(v[key])/max*100}%"></span></div><b>${key==='pay'?money(v[key]):num(v[key])+' lb'}</b></div>`).join('');}
 function createPDF(rows){if(!rows.length)throw Error('No hay filas para exportar.');if(!root.jspdf?.jsPDF)throw Error('Falta la dependencia PDF local.');const doc=new root.jspdf.jsPDF(),t=totals(rows);doc.setFillColor(122,31,61);doc.rect(0,0,210,38,'F');doc.setTextColor(255);doc.setFontSize(22);doc.text('Pelado | Informe de producción',14,18);doc.setFontSize(10);doc.text('Análisis local de las filas filtradas · USD / lb / horas',14,28);doc.setTextColor(30);doc.setFontSize(11);const dates=rows.map(r=>r.date).filter(Boolean).sort();doc.text(`${dates[0]||'Sin fecha'} a ${dates.at(-1)||'Sin fecha'} | ${rows.length} movimientos`,14,48);doc.text(`Producción: ${num(t.lb)} lb | Pago registrado: ${money(t.pay)} | Horas: ${num(t.hours)}`,14,56);doc.text(`Filas sin pago: ${t.missingPay}. No se inventan importes. Intervalos solapados unidos.`,14,64);doc.autoTable({startY:72,head:[['Categoría','Libras (lb)','Pago (USD)']],body:Object.entries(t.cats).map(([k,v])=>[k,v.productionRows?num(v.lb):'—',money(v.pay)]),headStyles:{fillColor:[122,31,61]},styles:{fontSize:10}});let y=doc.lastAutoTable.finalY+12;const max=Math.max(1,...Object.values(t.cats).filter(c=>c.productionRows>0).map(c=>c.lb));doc.setFontSize(10);doc.text('Producción por categoría (lb)',14,y);y+=8;for(const [k,v]of Object.entries(t.cats).filter(([,v])=>v.productionRows>0)){doc.text(k,14,y+4);doc.setFillColor(122,31,61);doc.rect(47,y,100*v.lb/max,5,'F');doc.text(num(v.lb)+' lb',152,y+4);y+=10;}
  doc.autoTable({startY:y+8,head:[['Fecha','Empleado','Horario','Producto / talla','Lb','USD/lb','Pago USD']],body:rows.map(r=>[r.date||'Sin fecha',r.employee||'—',`${r.entry||'—'} - ${r.exit||'—'}`,`${r.product}\nTalla ${r.size||'—'} · ${r.category}`,num(r.pounds),money(r.rate),money(r.pay)]),headStyles:{fillColor:[122,31,61]},styles:{fontSize:7,overflow:'linebreak',cellPadding:2},columnStyles:{0:{cellWidth:21},1:{cellWidth:27},2:{cellWidth:24},3:{cellWidth:51}},margin:{top:18,bottom:18},rowPageBreak:'avoid'});
+ root.PeladoInsights?.appendPDF(doc,rows);
  const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(100);doc.text(`Pelado · ${p} / ${pages} · Datos de origen, sin validación salarial`,14,289);}return doc;}
 root.PeladoExcel.createPDF=createPDF;
 let token='',captchaId=null;

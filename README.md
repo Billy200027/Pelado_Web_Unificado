@@ -35,3 +35,15 @@ El usuario puede desmarcar Incluir el Excel original. La selección no envía da
 El lector admite fechas AAAA/MM/DD además de AAAA-MM-DD, conserva conceptos sin libras o sin fecha (LIBRES, HORAS, AVANCE), separa TOTAL de los movimientos, interpreta tallas expresadas como rangos y usa la categoría declarada cuando no hay una correspondencia conocida. Los intervalos de tiempo se unen por empleado, incluyendo segundos, sin duplicar solapamientos. La comparación con el lector anterior se comprobó con un archivo privado del usuario; ese documento y su contenido no se publican en el repositorio.
 
 El selector permite consultar conceptos sin fecha; al filtrar un período se excluyen porque no puede asignárseles uno por suposición. Se muestran la suma de movimientos y el total declarado por separado cuando son comparables, sin reinterpretar los conceptos como descuentos. Los registros del control diario no cambian. Los nombres largos de archivos y las notas se ajustan al ancho móvil.
+
+## Informe mensual completo
+
+La vista Excel conserva el resumen y añade evolución diaria de libras o pagos, gráficos de barras/anillo/pastel/tarjetas, distribución de pagos por concepto, productos, indicadores de productividad y tarjetas o tabla de jornadas. Cada jornada permite abrir todos sus movimientos, con tarifa, rendimiento mensual, entrada y salida originales, categoría y fila/hoja de origen. Los movimientos también pueden verse en tarjetas o tabla. Hay filtros por empleado, período 21–20, intervalo de fechas y búsqueda; todos afectan a los mismos datos y al PDF. Los conceptos sin fecha solo se incluyen sin filtro temporal. Posibles duplicados se advierten y conservan, sin eliminarlos por suposición.
+
+El PDF incorpora todos los movimientos seleccionados, evolución diaria, tabla de jornadas, productos/conceptos y datos originales complementarios. La productividad es libras ÷ horas registradas, uniendo intervalos superpuestos por empleado; no se aplica al cálculo del control diario.
+
+## Recepciones de Excel en Supabase
+
+Estado: pendiente de crear el proyecto Pelado y desplegar el endpoint. El conector permite listar proyectos, pero la consulta de coste/creación devuelve UNAVAILABLE. No hay envíos reales activos.
+
+Cuando esté desplegado, cada envío autorizado quedará en `public.pelado_uploads` con identificador, fecha de recepción y ruta del archivo privado. El administrador podrá consultar esa tabla desde el panel de Supabase y descargar el documento desde Storage → pelado-private. Esto proporciona registro de recepción, no notificación por correo o WhatsApp. Los registros del control diario no se envían. El botón Compartir solicita autorización expresa; seleccionar un archivo para analizarlo continúa siendo una operación local.
