@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#7A1F3D" />
+  <meta name="description" content="Control de producción e ingresos por pelado de camarón." />
+  <title>Pelado · Control de producción</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="variables.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="splash" class="splash-screen" aria-hidden="true">
+    <div class="splash-inner">
+      <div class="brand-mark splash-mark">P</div>
+      <div class="splash-title">Pelado</div>
+      <div class="splash-subtitle">Control de producción</div>
+      <div class="splash-loader"><span></span></div>
+    </div>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button id="mobileMenuBtn" class="icon-btn mobile-only" aria-label="Abrir menú">☰</button>
+        <div>
+          <div class="eyebrow">Control de producción</div>
+          <h1 id="pageTitle">Resumen</h1>
+        </div>
+      </div>
+      <button id="profileBtn" class="avatar-btn" title="Perfil"></button>
+    </header>
+
+    <main class="main-content">
+      <div id="moduleSelector" class="module-selector"><button class="btn btn-primary" data-module="daily">Pelado · Control diario</button><button class="btn btn-secondary" data-module="excel">Pelado · Excel / PDF</button></div>
+      <div id="periodControls"></div>
+      <section id="view-excel" class="view"></section>
+      <section id="view-dashboard" class="view active-view"></section>
+      <section id="view-calendar" class="view"></section>
+      <section id="view-history" class="view"></section>
+      <section id="view-settings" class="view"></section>
+    </main>
+
+    <nav id="bottomNav" class="bottom-nav" aria-label="Navegación principal">
+      <button class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">⌂</span><span>Resumen</span>
+      </button>
+      <button class="nav-item" data-view="calendar">
+        <span class="nav-icon">▦</span><span>Calendario</span>
+      </button>
+      <button class="nav-item" data-view="history">
+        <span class="nav-icon">≡</span><span>Historial</span>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <span class="nav-icon">⚙</span><span>Ajustes</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="mobileDrawer" class="mobile-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="brand-mini"><div class="brand-mark">P</div><strong>Pelado</strong></div>
+      <button id="closeDrawer" class="icon-btn" aria-label="Cerrar menú">×</button>
+    </div>
+    <div class="drawer-profile" id="drawerProfile"></div>
+    <div class="drawer-links">
+      <button data-view="dashboard">⌂ <span>Resumen</span></button>
+      <button data-view="calendar">▦ <span>Calendario</span></button>
+      <button data-view="history">≡ <span>Historial</span></button>
+      <button data-view="settings">⚙ <span>Ajustes</span></button>
+    </div>
+  </aside>
+
+  <div id="modalRoot"></div>
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="xlsx.full.min.js"></script>
+  <script src="jspdf.umd.min.js"></script>
+  <script src="jspdf.plugin.autotable.min.js"></script>
+  <script src="core.js"></script>
+  <script src="remote-config.js"></script>
+  <script src="variables.js"></script>
+  <script src="app.js"></script>
+  <script src="excel.js"></script>
+  <script>document.addEventListener("DOMContentLoaded",()=>{if(location.protocol!=="file:"&&"serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});});</script>
+</body>
+</html>
