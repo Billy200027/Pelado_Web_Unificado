@@ -1064,3 +1064,11 @@ h3 {
 .excel-sharing > summary .tiny{display:block;margin-top:5px;color:var(--color-text-soft)}
 .excel-sharing-body{margin-top:16px}
 .sharing-privacy{margin:14px 0;font-size:12px}
+
+/* Evita que el nombre del archivo o las notas ensanchen la página en Android. */
+.view,.section-head>div,.filter-grid>*,.dashboard-grid>*,.stats-grid>*{min-width:0}
+.dropzone{min-width:0;max-width:100%;grid-template-columns:minmax(0,1fr)}
+.dropzone input{display:block;width:100%;min-width:0;max-width:100%;font-size:14px}
+.dropzone .tiny,.notice,.bar-row span{white-space:normal;overflow-wrap:anywhere}
+.table-wrap{min-width:0;max-width:100%}
+.excel-sharing-body label{display:block;overflow-wrap:anywhere}
