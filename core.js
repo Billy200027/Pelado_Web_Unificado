@@ -14,7 +14,9 @@ const peelingMoney=trunc(keys.reduce((s,k)=>s+money[k],0));let minutes=0,hourErr
 const hoursMoney=trunc(minutes/60*Number(c.hourlyRate)*(r.holiday?Number(c.hourHolidayMultiplier):1));return {totalTrays,lbPerTray,lb,money,prices,peelingMoney,hoursMoney,minutes,hourError,totalMoney:hoursMoney===0?peelingMoney:(peelingMoney===0?hoursMoney:trunc(peelingMoney+hoursMoney))};}
 function migrate(old){const periods={},conflicts=[];for(const bucket of Object.values(old||{}))for(const [date,record]of Object.entries(bucket.days||{})){try{parseDate(date);const k=periodOf(date);periods[k]??={days:{}};if(periods[k].days[date]&&JSON.stringify(periods[k].days[date])!==JSON.stringify(record))conflicts.push({date,record});else periods[k].days[date]={...record,date};}catch{conflicts.push({date,record});}}return {periods,conflicts};}
 function remaining(y,m,records,today=new Date()){const now=dateKey(today);return dates(y,m).filter(d=>d>now&&!['libre','falta'].includes(records[d]?.type)).length;}
+// Un precio unitario expresado en centavos por cada día libre registrado.
+function freeDayPay(count,rate){const cents=Math.floor((Number(rate)+Number.EPSILON)*100);return cents*Math.max(0,Math.floor(Number(count)||0))/100;}
 function category(size){const s=String(size).trim().toUpperCase();if(!s)return 'Sin talla';if(s==='51')return 'Pequeño';if(['31','36','41'].includes(s))return 'Mediano';if(['15','16','21','26'].includes(s))return 'Grande';return 'Sin clasificar';}
-root.PeladoCore={keys,trunc,dateKey,parseDate,periodOf,dates,duration,calculateDay,migrate,remaining,category};
+root.PeladoCore={keys,trunc,dateKey,parseDate,periodOf,dates,duration,calculateDay,migrate,remaining,category,freeDayPay};
 if(typeof module!=='undefined')module.exports=root.PeladoCore;
 })(typeof window!=='undefined'?window:globalThis);

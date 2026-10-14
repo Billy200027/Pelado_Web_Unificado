@@ -47,3 +47,13 @@ El PDF incorpora todos los movimientos seleccionados, evolución diaria, tabla d
 Estado: pendiente de crear el proyecto Pelado y desplegar el endpoint. El conector permite listar proyectos, pero la consulta de coste/creación devuelve UNAVAILABLE. No hay envíos reales activos.
 
 Cuando esté desplegado, cada envío autorizado quedará en `public.pelado_uploads` con identificador, fecha de recepción y ruta del archivo privado. El administrador podrá consultar esa tabla desde el panel de Supabase y descargar el documento desde Storage → pelado-private. Esto proporciona registro de recepción, no notificación por correo o WhatsApp. Los registros del control diario no se envían. El botón Compartir solicita autorización expresa; seleccionar un archivo para analizarlo continúa siendo una operación local.
+
+## Pago por día libre y adelantos
+
+Por corrección expresa de Billy, el importe fijo de quincena deja de sumarse a la proyección. Ajustes → Libres y bono ofrece `freeDayRate`, con referencia provisional y editable de **16,07 USD por día libre**. Se multiplica por los días marcados Libre del período 21–20, incluidos los que el usuario haya programado: 5 × 16,07 = 80,35 USD. No se presuponen libres adicionales entre los días sin registro. Los libres no entran en el promedio de producción, no causan descuentos y no anulan el bono de asistencia.
+
+La proyección suma producción acumulada después de faltas, producción futura estimada, pago por libres y bono de asistencia según la regla existente. Los adelantos recibidos se conservan como pagos reales (`fortnight`, clave histórica compatible), se comparan con la proyección y se restan al mostrar el saldo estimado por cobrar. No se presume un depósito de 241 USD. Las jornadas, ajustes de tarifas y pagos existentes permanecen intactos; `fortnightDeposit` antiguo se conserva si ya estaba guardado, pero no participa en las estimaciones. Cambiar la tarifa de libre recalcula los períodos estimados anteriores, igual que las demás tarifas locales; no modifica pagos reales.
+
+Archivos del cambio: `js/variables.js` (valor inicial), `js/core.js` (`freeDayPay`), `js/app.js` (ajustes, proyección, modal e historial). En la publicación esos archivos están en la raíz. Prueba específica: `tests/free-days.test.cjs`, además de la suite de regresión completa.
+
+Supabase continúa pendiente: el acceso web elegido con ChatGPT redirigió a Google y la revisión automática bloqueó ese cambio de proveedor. No se completó el acceso ni se envió ningún Excel. Se requiere autorización explícita para continuar ese inicio de sesión.

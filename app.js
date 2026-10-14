@@ -165,9 +165,9 @@
       : 0;
     const projectedProductionClose = truncateCents(stats.productionAdjusted + projectedFutureProduction);
     const projectedMonthEnd = truncateCents(
-      projectedProductionClose + (stats.absences === 0 ? state.config.attendanceBonus : 0)
+      projectedProductionClose + stats.freeMoney + (stats.absences === 0 ? state.config.attendanceBonus : 0)
     );
-    const projectedTotalMonth = truncateCents(state.config.fortnightDeposit + projectedMonthEnd);
+    const projectedTotalMonth = projectedMonthEnd;
     const realTotal = Number(real.fortnight || 0) + Number(real.monthEnd || 0);
 
     $("#view-dashboard").innerHTML = `
@@ -185,8 +185,9 @@
           <div class="hero-kicker">Proyección total del período</div>
           <div class="hero-amount">${money(projectedTotalMonth)}</div>
           <p class="hero-note">
-            Incluye $${formatMoney(state.config.fortnightDeposit)} de quincena
-            + producción estimada de cierre de período
+            Libres: ${stats.freeDays} × $${formatMoney(state.config.freeDayRate)} = $${formatMoney(stats.freeMoney)}
+            + producción acumulada $${formatMoney(stats.productionAdjusted)}
+            + producción futura estimada $${formatMoney(projectedFutureProduction)}
             ${stats.absences === 0 ? `+ $${formatMoney(state.config.attendanceBonus)} de asistencia` : " · sin bono de asistencia por faltas"}.
           </p>
         </div>
@@ -226,13 +227,14 @@
           </div>
           <div class="projection-box">
             <div class="projection-main">
-              <div class="tiny">Cierre · producción proyectada + bono</div>
+              <div class="tiny">Total · producción + libres + bono</div>
               <div class="projection-value">${money(projectedMonthEnd)}</div>
             </div>
             ${projectionLine("Producción acumulada", money(stats.productionAdjusted))}
             ${projectionLine("Producción futura estimada", money(projectedFutureProduction))}
             ${projectionLine("Días trabajados", stats.workedDays)}
             ${projectionLine("Días libres", stats.freeDays)}
+            ${projectionLine("Pago por libres", `${stats.freeDays} × ${money(state.config.freeDayRate)} = ${money(stats.freeMoney)}`)}
             ${projectionLine("Faltas", stats.absences)}
             ${projectionLine("Días trabajables restantes", stats.remainingWorkableDays)}
             ${projectionLine("Bono asistencia", stats.absences === 0 ? money(state.config.attendanceBonus) : "$0,00")}
@@ -249,9 +251,10 @@
             </div>
           </div>
           <div class="projection-box">
-            ${projectionLine("Quincena real", money(real.fortnight))}
-            ${projectionLine("Cierre real", money(real.monthEnd))}
-            ${projectionLine("Diferencia real − proyección", money(truncateCents(realTotal - projectedTotalMonth)))}
+            ${projectionLine("Adelanto recibido", money(real.fortnight))}
+            ${projectionLine("Cierre recibido", money(real.monthEnd))}
+            ${projectionLine("Diferencia real − proyección", money((Math.round(realTotal * 100) - Math.round(projectedTotalMonth * 100)) / 100))}
+            ${projectionLine("Saldo estimado por cobrar", money((Math.round(projectedTotalMonth * 100) - Math.round(realTotal * 100)) / 100))}
             <div class="calc-total"><span>Total real</span><span>${money(realTotal)}</span></div>
           </div>
         </div>
@@ -439,15 +442,16 @@
         </div>
 
         <div class="card card-pad">
-          <div class="section-title">Pagos fijos</div>
+          <div class="section-title">Libres y bono</div>
           <div class="price-row">
-            <div class="price-label">Quincena</div>
-            <input id="fortnightDeposit" class="input" type="number" step="0.01" min="0" value="${c.fortnightDeposit}">
+            <label for="freeDayRate" class="price-label">Pago por día libre <div class="tiny">USD por cada día marcado Libre</div></label>
+            <input id="freeDayRate" class="input" type="number" step="0.01" min="0" value="${c.freeDayRate}">
           </div>
           <div class="price-row">
             <div class="price-label">Bono de asistencia <div class="tiny">Solo si no hubo faltas</div></div>
             <input id="attendanceBonus" class="input" type="number" step="0.01" min="0" value="${c.attendanceBonus}">
           </div>
+          <p class="tiny">Referencia provisional: $16,07 por libre. Se suman solo los días marcados Libre, también si ya los programaste. El adelanto recibido no es un ingreso adicional; regístralo en pagos reales. Cambiar este precio recalcula las estimaciones de libres de todos los períodos.</p>
           <div style="margin-top:14px;">
             <button class="btn btn-primary btn-block" data-action="save-settings">Guardar cambios</button>
           </div>
@@ -543,7 +547,7 @@
               <strong>Trabajé</strong><span>Registrar producción</span>
             </button>
             <button class="type-option ${isFree ? "selected" : ""}" data-modal-type="libre">
-              <strong>Día libre</strong><span>No genera producción</span>
+              <strong>Día libre</strong><span>Pago unitario configurado</span>
             </button>
             <button class="type-option ${isAbsent ? "selected" : ""}" data-modal-type="falta">
               <strong>Falté</strong><span>Aplica descuento</span>
@@ -601,7 +605,7 @@
 
           <div id="freeNotice" class="${isFree ? "" : "hidden"}">
             <div class="notice">
-              Este día se considera libre. No entra en el promedio de producción ni genera descuento.
+              Este día se considera libre. Suma el pago por libre configurado; no entra en el promedio de producción ni genera descuento.
             </div>
           </div>
         </div>
@@ -642,6 +646,7 @@
     $("#absenceNotice").classList.toggle("hidden",r.type!=="falta");
     $("#freeNotice").classList.toggle("hidden",r.type!=="libre");
     $("#hoursFields").classList.toggle("hidden",!r.hoursEnabled);
+    if(r.type==="libre"){$("#dayCalculation").innerHTML=`${projectionLine("Pago por día libre",money(PeladoCore.freeDayPay(1,state.config.freeDayRate)))}<p class="tiny">No se aplica nocturno ni feriado al libre. No genera producción ni descuento.</p>`;return;}
     const c=calculateDay(r);
     $("#dayCalculation").innerHTML=`<div class="tiny">Distribución proporcional · ${formatNumber(c.lbPerTray)} lb por bandeja</div>
       ${PeladoCore.keys.map((k,i)=>`<div class="calc-row"><span>${escapeHtml(["Grande","Mediano","Pequeño",state.config.additionalName][i])} · ${formatNumber(c.lb[k])} lb</span><strong>${money(c.money[k])}</strong></div>`).join("")}
@@ -753,6 +758,7 @@
       totalTrays,
       workedDays,
       freeDays,
+      freeMoney: PeladoCore.freeDayPay(freeDays,state.config.freeDayRate),
       absences,
       holidays,
       nights,
@@ -790,11 +796,11 @@
           </div>
           <div class="form-grid">
             <div class="field">
-              <label>Quincena real</label>
+              <label>Adelanto recibido</label>
               <input id="realFortnight" class="input" type="number" step="0.01" min="0" value="${real.fortnight}">
             </div>
             <div class="field">
-              <label>Fin de mes real</label>
+              <label>Cierre recibido</label>
               <input id="realMonthEnd" class="input" type="number" step="0.01" min="0" value="${real.monthEnd}">
             </div>
           </div>
@@ -850,7 +856,7 @@
     state.config.nightSurcharge = numberValue("#nightSurcharge");
     state.config.holidayMultiplier = Math.max(1, numberValue("#holidayMultiplier"));
     state.config.absenceDeduction = numberValue("#absenceDeduction");
-    state.config.fortnightDeposit = numberValue("#fortnightDeposit");
+    state.config.freeDayRate = numberValue("#freeDayRate");
     state.config.attendanceBonus = numberValue("#attendanceBonus");
 
     const overrides=Object.fromEntries(PeladoCore.keys.filter(k=>state.config.prices[k]!==APP_CONFIG.prices[k]).map(k=>[k,state.config.prices[k]]));
@@ -947,7 +953,8 @@
     const calc = record.type === "trabajado" ? calculateDay(record) : null;
 
     let sub = "Día libre";
-    let value = "—";
+    let value = record.type==="libre"?money(PeladoCore.freeDayPay(1,state.config.freeDayRate)):"—";
+    if(record.type==="libre")sub="Día libre · pago unitario configurado";
 
     if (record.type === "falta") {
       sub = `Falta · descuento ${money(state.config.absenceDeduction)}`;
@@ -1028,7 +1035,7 @@
   function legacyAssignments(){const assigned=load("pelado_legacy_assignments_v2",{});for(const [period,payment]of Object.entries(state.realPayments))for(const source of payment.legacySources||[])assigned[source]=period;return assigned;}
   function legacyPaymentsUI(){
     const old=load('pelado_migration_backup_v1',{}).realPayments||{},assigned=legacyAssignments();
-    return Object.entries(old).map(([k,v])=>`<div class="projection-line"><span>${escapeHtml(k)} · quincena ${money(v.fortnight)}, cierre ${money(v.monthEnd)}</span>${assigned[k]?`<strong>Asignado a ${escapeHtml(assigned[k])}</strong>`:`<button class="btn btn-soft" data-action="assign-payment" data-legacy="${escapeAttr(k)}">Asignar al período visible</button>`}</div>`).join('')||'<p class="tiny">No hay pagos antiguos pendientes.</p>';
+    return Object.entries(old).map(([k,v])=>`<div class="projection-line"><span>${escapeHtml(k)} · adelanto ${money(v.fortnight)}, cierre ${money(v.monthEnd)}</span>${assigned[k]?`<strong>Asignado a ${escapeHtml(assigned[k])}</strong>`:`<button class="btn btn-soft" data-action="assign-payment" data-legacy="${escapeAttr(k)}">Asignar al período visible</button>`}</div>`).join('')||'<p class="tiny">No hay pagos antiguos pendientes.</p>';
   }
   function assignLegacyPayment(k){
     const backup=load('pelado_migration_backup_v1',{}),r=backup.realPayments?.[k],assignments=legacyAssignments();
@@ -1056,7 +1063,7 @@
       const cfg=parsed[STORAGE_KEYS.config];
       if(cfg){
         if(typeof cfg!=="object"||Array.isArray(cfg))throw Error("Configuración inválida.");
-        for(const k of ["nightSurcharge","holidayMultiplier","absenceDeduction","fortnightDeposit","attendanceBonus","hourlyRate","hourHolidayMultiplier","splashDurationMs"])if(cfg[k]!=null&&(typeof cfg[k]!=="number"||!Number.isFinite(cfg[k])||cfg[k]<0))throw Error("Configuración numérica inválida: "+k);
+        for(const k of ["nightSurcharge","holidayMultiplier","absenceDeduction","fortnightDeposit","freeDayRate","attendanceBonus","hourlyRate","hourHolidayMultiplier","splashDurationMs"])if(cfg[k]!=null&&(typeof cfg[k]!=="number"||!Number.isFinite(cfg[k])||cfg[k]<0))throw Error("Configuración numérica inválida: "+k);
         if(cfg.prices&&(typeof cfg.prices!=="object"||Array.isArray(cfg.prices)||Object.values(cfg.prices).some(v=>typeof v!=="number"||!Number.isFinite(v)||v<0)))throw Error("Tarifa inválida.");
         if(cfg.additionalName!=null&&typeof cfg.additionalName!=="string")throw Error("Nombre adicional inválido.");
       }

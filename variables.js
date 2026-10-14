@@ -27,8 +27,8 @@ const APP_CONFIG = {
   // Descuento por una falta.
   absenceDeduction: 32,
 
-  // Depósito fijo de quincena.
-  fortnightDeposit: 241,
+  // Pago unitario de día libre. Provisional y editable localmente.
+  freeDayRate: 16.07,
 
   // Bono de asistencia de fin de mes.
   attendanceBonus: 70,
