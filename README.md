@@ -23,3 +23,9 @@ El envío mensual está desactivado hasta crear y configurar un proyecto indepen
 ## Proyecto anterior
 
 Mi_Pelado se conserva sin cambios. Este repositorio permite probar la nueva versión de forma independiente.
+
+## Recuadro de envío compacto
+
+En la publicación, `excel.js` líneas 4–7 define `EXCEL_SHARING_DEFAULTS`: `includeOriginal: true` selecciona la casilla al abrir y `expanded: false` deja el recuadro plegado. El HTML del recuadro se genera en `excel.js`, líneas 30–51; la casilla está en la línea 39. No está escrito directamente en index.html.
+
+El usuario puede desmarcar Incluir el Excel original. La selección no envía datos ni representa una autorización automática: para enviar es necesario pulsar Autorizar y enviar Excel, con información visible sobre el administrador y los datos personales. El envío permanece desactivado hasta configurar Supabase. El CSS del recuadro está al final de style.css.

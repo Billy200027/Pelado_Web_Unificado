@@ -1,5 +1,10 @@
 /* Parser del segundo proyecto ampliado: encabezados por nombre, sin tarifas inferidas. */
 (function(root){'use strict';
+// Valores iniciales para todos. La casilla selecciona el archivo, no autoriza una subida automática.
+const EXCEL_SHARING_DEFAULTS = Object.freeze({
+  includeOriginal: true, // true = casilla marcada al abrir la página; false = desmarcada.
+  expanded: false       // false = recuadro compacto; true = mostrar todas las opciones.
+});
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const aliases={code:['codempleado','codigoempleado','codigo','cod'],employee:['empleado','nombreempleado','trabajador'],date:['fecha','fechaproduccion','dia'],product:['producto','descripcionproducto'],size:['tallavta','talla','tallaventa'],sourceCategory:['categoriadetalla','categoria','categoriatalla'],entry:['entradasonga','entrada','horainicio','inicio'],exit:['salidasonga','salida','horafin','fin'],pounds:['libraspeladas','libras','lb','peso'],monthlyYield:['rendmensual','rendimientomensual'],rate:['valortarifa','tarifa','preciolibra'],pay:['valorpago','pago','importe','totalpago']};
 function numeric(v){if(v===null||v===undefined||String(v).trim()==='')return null;if(typeof v==='number')return Number.isFinite(v)?v:null;let s=String(v).replace(/[\s$]/g,'');if(s.includes(',')&&s.includes('.')){const decimal=s.lastIndexOf(',')>s.lastIndexOf('.')?',':'.';s=s.replace(decimal===','?/\./g:/,/g,'').replace(',','.');}else if(s.includes(','))s=s.replace(',','.');if(!/^-?\d+(\.\d+)?$/.test(s))return null;const n=Number(s);return Number.isFinite(n)?n:null;}
@@ -22,7 +27,28 @@ document.addEventListener('DOMContentLoaded',()=>{
  $('#view-excel').innerHTML=`<div class="section-head"><div><div class="eyebrow">Pelado · análisis local</div><h2>Tu reporte, explicado</h2><p class="muted">Importa Excel o CSV y descarga un informe PDF real. No modifica el control diario.</p></div><button id="clearExcel" class="btn btn-secondary">Limpiar análisis</button></div>
  <div class="card card-pad"><label id="dropzone" class="dropzone"><strong>Selecciona o arrastra tu reporte</strong><input id="excelFile" type="file" accept=".xlsx,.xls,.csv"><span class="tiny">XLSX · XLS · CSV — máximo 10 MB · procesamiento sin conexión</span></label><div id="excelError" class="error" role="alert" hidden></div><div class="field" id="sheetField" hidden><label for="sheetSelect">Hoja del archivo</label><select id="sheetSelect" class="select"></select></div><p class="tiny">No se inventan tarifas ni pagos ausentes. Las horas de análisis deduplican intervalos idénticos por empleado y día; no representan una regla salarial.</p></div>
  <div id="excelReport" hidden><div class="filter-grid"><input id="excelSearch" class="input" aria-label="Buscar jornadas" placeholder="Buscar fecha, empleado, producto o talla…"><select id="employeeFilter" class="select" aria-label="Filtrar empleado"></select><select id="periodFilter" class="select" aria-label="Filtrar período"></select></div><div id="excelWarnings" class="notice"></div><div id="excelKpis" class="stats-grid"></div><div class="dashboard-grid"><div class="card card-pad"><h3>Producción por categoría · lb</h3><div id="excelLbBars"></div></div><div class="card card-pad"><h3>Pago por categoría · USD</h3><div id="excelPayBars"></div></div></div><div class="actions"><button id="pdfExcel" class="btn btn-primary">Descargar informe PDF</button></div><div class="card card-pad excel-panel"><h3>Detalle de jornadas</h3><p id="excelCount" class="tiny"></p><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Horario</th><th>Producto</th><th>Talla</th><th>Categoría</th><th>Lb</th><th>Tarifa USD/lb</th><th>Pago USD</th><th>Detalle</th></tr></thead><tbody id="excelBody"></tbody></table></div><div id="excelDetail"></div></div></div>
- <div class="card card-pad excel-panel"><h3>Envío opcional del Excel original</h3><p class="muted">El análisis no necesita envío. Si habilitas esta opción, se enviará únicamente el archivo seleccionado a un almacenamiento privado para revisión del administrador.</p><p id="remoteStatus" class="notice"></p><label><input id="excelConsent" type="checkbox"> Autorizo enviar este archivo, que puede contener nombres y datos de producción.</label><p class="tiny">Retención propuesta: <span id="retention"></span> días; el administrador debe habilitar la eliminación programada. Para retirar un documento conserva su identificador de recepción y contacta al administrador.</p><div id="captchaSlot"></div><button id="uploadExcel" class="btn btn-soft">Enviar Excel original</button><p id="uploadStatus" role="status"></p></div>`;
+ <details id="excelSharingPanel" class="card card-pad excel-panel excel-sharing" ${EXCEL_SHARING_DEFAULTS.expanded ? 'open' : ''}>
+   <summary>
+     <strong>Compartir Excel con el administrador</strong>
+     <span class="tiny">Opcional · solo se envía al pulsar «Autorizar y enviar».</span>
+   </summary>
+   <div class="excel-sharing-body">
+     <p class="muted">Puedes enviar una copia del Excel original al almacenamiento privado del administrador. Puede contener nombres y datos de producción. Analizar el archivo no lo envía.</p>
+     <p id="remoteStatus" class="notice"></p>
+     <label>
+       <input id="excelConsent" type="checkbox" ${EXCEL_SHARING_DEFAULTS.includeOriginal ? 'checked' : ''}>
+       Incluir el Excel original en el envío.
+     </label>
+     <p class="tiny">Puedes desmarcar esta opción. Al pulsar «Autorizar y enviar Excel» autorizas el envío de la copia seleccionada.</p>
+     <details class="sharing-privacy">
+       <summary>Privacidad y conservación</summary>
+       <p class="tiny">Retención propuesta: <span id="retention"></span> días; el administrador debe habilitar la eliminación programada. Para retirar un documento conserva su identificador de recepción y contacta al administrador.</p>
+     </details>
+     <div id="captchaSlot"></div>
+     <button id="uploadExcel" class="btn btn-soft">Autorizar y enviar Excel</button>
+     <p id="uploadStatus" role="status"></p>
+   </div>
+ </details>`;
  const cfg=root.PELADO_REMOTE||{};$('#retention').textContent=cfg.retentionDays||90;$('#remoteStatus').textContent=cfg.uploadEndpoint?'Integración configurada. El envío requiere internet y validación antiabuso.':'Modo local: envío desactivado. Falta configurar y desplegar el endpoint protegido.';
  $('#excelFile').addEventListener('change',e=>readFile(e.target.files[0]));
  ['dragenter','dragover'].forEach(ev=>$('#dropzone').addEventListener(ev,e=>{e.preventDefault();$('#dropzone').classList.add('drag');}));
@@ -46,7 +72,7 @@ function createPDF(rows){if(!rows.length)throw Error('No hay filas para exportar
  const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(100);doc.text(`Pelado · ${p} / ${pages} · Datos de origen, sin validación salarial`,14,289);}return doc;}
 root.PeladoExcel.createPDF=createPDF;
 let token='',captchaId=null;
-async function upload(){const cfg=root.PELADO_REMOTE||{};$('#uploadStatus').textContent='';if(!cfg.uploadEndpoint)return $('#uploadStatus').textContent='Modo local. Falta desplegar y configurar Supabase; no se ha enviado ningún archivo.';if(!original)return $('#uploadStatus').textContent='Selecciona el Excel original para enviarlo.';if(!$('#excelConsent').checked)return $('#uploadStatus').textContent='Se necesita tu consentimiento explícito.';if(!navigator.onLine)return $('#uploadStatus').textContent='Sin conexión. Puedes continuar con el análisis local.';
+async function upload(){const cfg=root.PELADO_REMOTE||{};$('#uploadStatus').textContent='';if(!cfg.uploadEndpoint)return $('#uploadStatus').textContent='Modo local. Falta desplegar y configurar Supabase; no se ha enviado ningún archivo.';if(!original)return $('#uploadStatus').textContent='Selecciona el Excel original para enviarlo.';if(!$('#excelConsent').checked)return $('#uploadStatus').textContent='La opción de incluir el Excel está desmarcada. No se enviará ningún archivo.';if(!navigator.onLine)return $('#uploadStatus').textContent='Sin conexión. Puedes continuar con el análisis local.';
  if(!token){if(!cfg.turnstileSiteKey)return $('#uploadStatus').textContent='Falta la clave pública de verificación antiabuso.';if(!root.turnstile){const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.onload=()=>{captchaId=root.turnstile.render('#captchaSlot',{sitekey:cfg.turnstileSiteKey,callback:t=>{token=t;$('#uploadStatus').textContent='Verificación completada. Pulsa Enviar de nuevo.';}});};script.onerror=()=>$('#uploadStatus').textContent='No se pudo cargar la verificación.';document.head.appendChild(script);}else if(captchaId!==null)root.turnstile.reset(captchaId);return $('#uploadStatus').textContent='Completa la verificación antiabuso.';}
  $('#uploadExcel').disabled=true;try{const form=new FormData();form.append('file',original);form.append('consent','yes');form.append('captcha',token);const res=await fetch(cfg.uploadEndpoint,{method:'POST',body:form});const body=await res.json();if(!res.ok)throw Error(body.error||'No se aceptó el archivo.');$('#uploadStatus').textContent='Archivo recibido. Identificador: '+body.id;}catch(e){$('#uploadStatus').textContent='No se confirmó el envío: '+e.message;}finally{token='';$('#uploadExcel').disabled=false;if(captchaId!==null)root.turnstile.reset(captchaId);}}
 })(typeof window!=='undefined'?window:globalThis);
