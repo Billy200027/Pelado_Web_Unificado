@@ -1,6 +1,15 @@
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  min-height: 100%;
+  background: var(--color-background);
+}
+
+html, body { width: 100%; }
+body { min-height: 100vh; min-height: 100dvh; }
+.topbar-actions { display: flex; align-items: center; gap: 6px; }
+:fullscreen { background: var(--color-background); }
 
 body {
   margin: 0;
@@ -27,7 +36,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 .app-shell {
   min-height: 100vh;
-  padding-bottom: 92px;
+  min-height: 100dvh;
+  padding-bottom: calc(92px + env(safe-area-max-inset-bottom, 36px));
 }
 
 .topbar {
@@ -845,7 +855,7 @@ h3 {
 .bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: 14px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
   z-index: 50;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -945,7 +955,7 @@ h3 {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 92px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
   z-index: 300;
   max-width: calc(100% - 30px);
   padding: 11px 15px;

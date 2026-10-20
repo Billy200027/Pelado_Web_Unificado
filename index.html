@@ -8,7 +8,7 @@
   <title>Pelado · Control de producción</title>
   <link rel="icon" href="logo.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="variables.css" />
-  <link rel="stylesheet" href="style.css?v=20261020-acumulado-v7" />
+  <link rel="stylesheet" href="style.css?v=20261020-pantalla-v8" />
 </head>
 <body>
   <div id="splash" class="splash-screen" aria-hidden="true">
@@ -29,7 +29,10 @@
           <h1 id="pageTitle">Resumen</h1>
         </div>
       </div>
-      <button id="profileBtn" class="avatar-btn" title="Perfil"></button>
+      <div class="topbar-actions">
+        <button id="fullscreenBtn" class="icon-btn" type="button" title="Pantalla completa" aria-label="Activar pantalla completa" aria-pressed="false">⛶</button>
+        <button id="profileBtn" class="avatar-btn" title="Perfil"></button>
+      </div>
     </header>
 
     <main class="main-content">
@@ -76,15 +79,16 @@
   <div id="modalRoot"></div>
   <div id="toast" class="toast" role="status"></div>
 
+  <script src="display.js?v=20261020-pantalla-v8"></script>
   <script src="xlsx.full.min.js"></script>
   <script src="jspdf.umd.min.js"></script>
   <script src="jspdf.plugin.autotable.min.js"></script>
-  <script src="core.js?v=20261020-acumulado-v7"></script>
+  <script src="core.js?v=20261020-pantalla-v8"></script>
   <script src="remote-config.js"></script>
-  <script src="variables.js?v=20261020-acumulado-v7"></script>
-  <script src="app.js?v=20261020-acumulado-v7"></script>
-  <script src="excel-insights.js?v=20261020-acumulado-v7"></script>
-  <script src="excel.js?v=20261020-acumulado-v7"></script>
-  <script>document.addEventListener("DOMContentLoaded",()=>{if(location.protocol!=="file:"&&"serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});});</script>
+  <script src="variables.js?v=20261020-pantalla-v8"></script>
+  <script src="app.js?v=20261020-pantalla-v8"></script>
+  <script src="excel-insights.js?v=20261020-pantalla-v8"></script>
+  <script src="excel.js?v=20261020-pantalla-v8"></script>
+  <script>document.addEventListener("DOMContentLoaded",()=>{if(location.protocol!=="file:"&&location.hostname!=="appassets.androidplatform.net"&&"serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});});</script>
 </body>
 </html>

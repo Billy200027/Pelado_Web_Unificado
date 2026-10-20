@@ -63,3 +63,11 @@ Supabase continúa pendiente: el acceso web elegido con ChatGPT redirigió a Goo
 El panel superior conserva la proyección con producción futura. El recuadro inferior «Total acumulado del período» suma solo producción acumulada después de faltas, libres registrados y bono según la regla existente; la producción futura sigue visible pero no se suma en ese recuadro. Los libres programados y el bono conservan su comportamiento previo: este total no representa un depósito confirmado.
 
 El aviso independiente de avances 25 y 50 muestra una estimación conjunta de las libras registradas del período × (40 / 2.000) USD, redondeada a centavos. No estima cada avance por separado, no proyecta libras futuras y no afecta producción, totales, saldos ni pagos reales. La referencia queda pendiente de verificar con el pago de fin de mes. No cambia el almacenamiento ni las tarifas de producción.
+
+## Pantalla completa y Android
+
+El botón ⛶ junto al perfil activa/desactiva la API de pantalla completa del navegador con un toque. La página usa altura dinámica `100dvh`, fondo continuo y posición inferior que respeta el área de gestos. Chrome puede rechazar u ocultar sus controles según la versión y el dispositivo; se muestra un aviso si no permite la petición. No se fuerza el modo al abrir la web.
+
+`android/` contiene el contenedor nativo de los mismos recursos web, con importación de archivos y exportación PDF/JSON mediante los selectores de Android. La APK abre sin conexión, conserva sus propios datos locales y oculta la navegación inferior del sistema (recuperable con un gesto). Para pasar datos de Chrome a la APK, exporta e importa un respaldo JSON desde Ajustes. No hay sincronización automática entre ambas opciones. No se ha activado Supabase.
+
+Verificación: ocho escenarios de acumulado/proyección, pruebas de pantalla completa y errores, exportación nativa simulada de JSON y un PDF real generado con jsPDF. APK compilada para Android 6+ y firma verificada; queda pendiente la comprobación visual y de selectores en un teléfono real.
