@@ -57,3 +57,9 @@ La proyección suma producción acumulada después de faltas, producción futura
 Archivos del cambio: `js/variables.js` (valor inicial), `js/core.js` (`freeDayPay`), `js/app.js` (ajustes, proyección, modal e historial). En la publicación esos archivos están en la raíz. Prueba específica: `tests/free-days.test.cjs`, además de la suite de regresión completa.
 
 Supabase continúa pendiente: el acceso web elegido con ChatGPT redirigió a Google y la revisión automática bloqueó ese cambio de proveedor. No se completó el acceso ni se envió ningún Excel. Se requiere autorización explícita para continuar ese inicio de sesión.
+
+## Total acumulado y avances provisionales
+
+El panel superior conserva la proyección con producción futura. El recuadro inferior «Total acumulado del período» suma solo producción acumulada después de faltas, libres registrados y bono según la regla existente; la producción futura sigue visible pero no se suma en ese recuadro. Los libres programados y el bono conservan su comportamiento previo: este total no representa un depósito confirmado.
+
+El aviso independiente de avances 25 y 50 muestra una estimación conjunta de las libras registradas del período × (40 / 2.000) USD, redondeada a centavos. No estima cada avance por separado, no proyecta libras futuras y no afecta producción, totales, saldos ni pagos reales. La referencia queda pendiente de verificar con el pago de fin de mes. No cambia el almacenamiento ni las tarifas de producción.

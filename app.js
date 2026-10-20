@@ -168,6 +168,12 @@
       projectedProductionClose + stats.freeMoney + (stats.absences === 0 ? state.config.attendanceBonus : 0)
     );
     const projectedTotalMonth = projectedMonthEnd;
+    // Este recuadro excluye la producción futura; la proyección superior se conserva.
+    const accumulatedTotal = truncateCents(
+      stats.productionAdjusted + stats.freeMoney + (stats.absences === 0 ? state.config.attendanceBonus : 0)
+    );
+    // Referencia conjunta provisional: $40 por 2.000 lb, sin incorporarla a ningún total.
+    const estimatedExtraAdvances = Math.round(stats.totalLb * (40 / 2000) * 100) / 100;
     const realTotal = Number(real.fortnight || 0) + Number(real.monthEnd || 0);
 
     $("#view-dashboard").innerHTML = `
@@ -221,17 +227,17 @@
         <div class="card card-pad">
           <div class="section-head">
             <div>
-              <div class="section-title">Proyección de cierre</div>
-              <div class="tiny">Solo usa días realmente trabajables</div>
+              <div class="section-title">Total acumulado del período</div>
+              <div class="tiny">Sin sumar la producción futura estimada</div>
             </div>
           </div>
           <div class="projection-box">
             <div class="projection-main">
               <div class="tiny">Total · producción + libres + bono</div>
-              <div class="projection-value">${money(projectedMonthEnd)}</div>
+              <div class="projection-value">${money(accumulatedTotal)}</div>
             </div>
             ${projectionLine("Producción acumulada", money(stats.productionAdjusted))}
-            ${projectionLine("Producción futura estimada", money(projectedFutureProduction))}
+            ${projectionLine("Producción futura estimada (no incluida)", money(projectedFutureProduction))}
             ${projectionLine("Días trabajados", stats.workedDays)}
             ${projectionLine("Días libres", stats.freeDays)}
             ${projectionLine("Pago por libres", `${stats.freeDays} × ${money(state.config.freeDayRate)} = ${money(stats.freeMoney)}`)}
@@ -239,6 +245,20 @@
             ${projectionLine("Días trabajables restantes", stats.remainingWorkableDays)}
             ${projectionLine("Bono asistencia", stats.absences === 0 ? money(state.config.attendanceBonus) : "$0,00")}
           </div>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:14px">
+        <div class="section-head">
+          <div>
+            <div class="section-title">Aviso · avances 25 y 50</div>
+            <div class="tiny">Extra aproximado del período · no incluido en los totales</div>
+          </div>
+        </div>
+        <div class="projection-box">
+          ${projectionLine("Libras registradas", `${formatNumber(stats.totalLb)} lb`)}
+          ${projectionLine("Extra conjunto estimado", money(estimatedExtraAdvances))}
+          <p class="notice">Los avances 25 y 50 no están incluidos en el total acumulado ni en la proyección superior. Referencia provisional conjunta: 2.000 lb ≈ $40,00 (1.000 lb ≈ $20,00). Se calcula solo con las libras registradas del período, sin proyectar libras futuras. No es una tarifa confirmada ni un pago recibido; queda pendiente comprobar el pago de fin de mes y cómo se calcula cada avance antes de incorporarlos a los totales.</p>
         </div>
       </div>
 
