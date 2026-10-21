@@ -920,18 +920,22 @@
     importProduction(period, records, replace=false) {
       if(!/^\d{4}-\d{2}$/.test(period))throw Error("Período inválido.");
       const next=structuredClone(state.months);next[period]??={days:{}};
-      let added=0,skipped=0;
+      let added=0,skipped=0,overwritten=0;
       for(const input of records){
         PeladoCore.parseDate(input.date);
         if(PeladoCore.periodOf(input.date)!==period)throw Error("Fecha fuera del período.");
         for(const key of PeladoCore.keys)if(!Number.isInteger(input[key])||input[key]<0)throw Error("Bandejas inválidas.");
         if(!Number.isFinite(input.libras)||input.libras<=0||!PeladoCore.keys.some(k=>input[k]>0))throw Error("Libras inválidas.");
         if(next[period].days[input.date]&&!replace){skipped++;continue;}
+        if(next[period].days[input.date])overwritten++;
         const record={...defaultDayRecord(input.date),...Object.fromEntries(PeladoCore.keys.map(k=>[k,input[k]])),libras:input.libras,hoursEnabled:false,startTime:'',endTime:'',nextDay:false};
         next[period].days[input.date]=record;added++;
       }
-      if(added){if(replace)exportBackup();save(STORAGE_KEYS.months,next);state.months=next;renderAll();}
-      return {added,skipped};
+      if(added){if(overwritten)exportBackup();save(STORAGE_KEYS.months,next);state.months=next;}
+      // Mostrar el período importado, no el período actual que estaba abierto.
+      window.PeladoDaily.openPeriod(period);
+      toast(`${added} días guardados; ${skipped} existentes conservados. Período ${period}-21 al ${PeladoCore.dateKey(new Date(state.currentYear,state.currentMonth+1,20,12))}.${overwritten?' El JSON descargado es el respaldo anterior.':''}`);
+      return {added,skipped,overwritten};
     },
     deletePeriod(period) {
       if(!state.months[period])return;
