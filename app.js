@@ -152,6 +152,7 @@
     renderSettings();
     updateHeader();
     $("#periodControls").innerHTML = periodToolbar();
+    document.dispatchEvent(new Event("pelado-daily-changed"));
   }
 
   function renderDashboard() {
@@ -912,6 +913,37 @@
   function getRealPaymentData() {
     return state.realPayments[monthKey()] || { fortnight: 0, monthEnd: 0 };
   }
+
+  // Acceso acotado para el panel de importación Excel; el guardado es atómico.
+  window.PeladoDaily = {
+    snapshot: () => structuredClone({months:state.months,config:state.config}),
+    importProduction(period, records, replace=false) {
+      if(!/^\d{4}-\d{2}$/.test(period))throw Error("Período inválido.");
+      const next=structuredClone(state.months);next[period]??={days:{}};
+      let added=0,skipped=0;
+      for(const input of records){
+        PeladoCore.parseDate(input.date);
+        if(PeladoCore.periodOf(input.date)!==period)throw Error("Fecha fuera del período.");
+        for(const key of PeladoCore.keys)if(!Number.isInteger(input[key])||input[key]<0)throw Error("Bandejas inválidas.");
+        if(!Number.isFinite(input.libras)||input.libras<=0||!PeladoCore.keys.some(k=>input[k]>0))throw Error("Libras inválidas.");
+        if(next[period].days[input.date]&&!replace){skipped++;continue;}
+        const record={...defaultDayRecord(input.date),...Object.fromEntries(PeladoCore.keys.map(k=>[k,input[k]])),libras:input.libras,hoursEnabled:false,startTime:'',endTime:'',nextDay:false};
+        next[period].days[input.date]=record;added++;
+      }
+      if(added){if(replace)exportBackup();save(STORAGE_KEYS.months,next);state.months=next;renderAll();}
+      return {added,skipped};
+    },
+    deletePeriod(period) {
+      if(!state.months[period])return;
+      exportBackup();
+      const next=structuredClone(state.months);delete next[period];
+      save(STORAGE_KEYS.months,next);state.months=next;renderAll();
+    },
+    openPeriod(period) {
+      if(!/^\d{4}-\d{2}$/.test(period))return;
+      const [year,month]=period.split('-').map(Number);state.currentYear=year;state.currentMonth=month-1;renderAll();switchView('calendar');
+    }
+  };
 
   function defaultDayRecord(date) {
     return {
