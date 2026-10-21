@@ -1147,6 +1147,7 @@
   function applySavedConfig() {
     state.config = deepMerge(structuredClone(APP_CONFIG), state.config || {});
     state.config.sizes = structuredClone(APP_CONFIG.sizes);
+    if(state.config.additionalName === "Adicional (provisional)")state.config.additionalName=APP_CONFIG.additionalName;
     let overrides=load('pelado_price_overrides_v1',null);
     if(overrides===null){
       // No se puede deducir si las tarifas v1 eran una personalización: se conservan.

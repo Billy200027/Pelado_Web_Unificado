@@ -22,6 +22,16 @@ assert.equal(plan.records.length,2);assert.equal(plan.records[0].grande,18);asse
 assert.equal(w.PeladoDailyImport.plan([row('2026-09-01','Grande',4)],'1','QA','2026-08').records.length,0);
 assert.equal(w.PeladoDailyImport.plan([row('2026-09-01','Desconocida',10)],'1','QA','2026-08').records.length,0);
 assert.equal(w.PeladoDailyImport.plan([...rows,{...rows[0],code:'2',pounds:1000}],'1','QA','2026-08').records[0].libras,130.14);
+// La clasificación PCC tiene prioridad sobre la talla; 0,11 conserva su talla.
+const pccRows=[{...row('2026-07-21','Grande',10,0.8),rate:0.08},{...row('2026-07-21','Grande',10,1.1),rate:0.11}];
+const pcc=w.PeladoDailyImport.plan(pccRows,'1','QA','2026-07');
+assert.equal(pcc.records[0].adicional,2);assert.equal(pcc.records[0].grande,2);assert.equal(pcc.records[0].libras,20);
+assert.equal(w.PeladoCore.calculateDay(pcc.records[0],w.PeladoDaily.snapshot().config).peelingMoney,1.9);
+assert.equal(w.PeladoCore.calculateDay(pcc.records[0],{...w.PeladoDaily.snapshot().config,prices:{grande:.11,mediano:.14,pequeno:.22,adicional:.09}}).peelingMoney,2,'PCC usa tarifa local y no precio del Excel');
+for(const rate of [.079,.08,.10,.10999])assert.equal(w.PeladoDailyImport.plan([{...pccRows[0],rate}],'1','QA','2026-07').records[0].adicional,2);
+for(const rate of [.11,.14,null,undefined])assert.equal(w.PeladoDailyImport.plan([{...pccRows[0],rate}],'1','QA','2026-07').records[0].grande,2);
+w.PeladoDaily.importProduction('2026-07',pcc.records);
+assert.equal(w.PeladoDaily.snapshot().months['2026-07'].days['2026-07-21'].adicional,2,'PCC se guarda como adicional en calendario');
 w.PeladoDailyImport.update(rows);
 w.document.querySelector('#dailyReplace').checked=true;
 let downloads=0;w.HTMLAnchorElement.prototype.click=function(){downloads++;};

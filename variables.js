@@ -33,7 +33,7 @@ const APP_CONFIG = {
   // Bono de asistencia de fin de mes.
   attendanceBonus: 70,
 
-  additionalName: "Adicional (provisional)",
+  additionalName: "PCC / tijera",
   hourlyRate: 2.01,
   hourHolidayMultiplier: 1,
 
