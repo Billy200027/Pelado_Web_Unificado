@@ -164,17 +164,17 @@
     const projectedFutureProduction = stats.workedDays > 0
       ? truncateCents(stats.average * stats.remainingWorkableDays)
       : 0;
+    // Referencia conjunta provisional: $40 por 2.000 lb registradas.
+    const estimatedExtraAdvances = Math.round(stats.totalLb * (40 / 2000) * 100) / 100;
     const projectedProductionClose = truncateCents(stats.productionAdjusted + projectedFutureProduction);
     const projectedMonthEnd = truncateCents(
-      projectedProductionClose + stats.freeMoney + (stats.absences === 0 ? state.config.attendanceBonus : 0)
+      projectedProductionClose + stats.freeMoney + (stats.absences === 0 ? state.config.attendanceBonus : 0) + estimatedExtraAdvances
     );
     const projectedTotalMonth = projectedMonthEnd;
     // Este recuadro excluye la producción futura; la proyección superior se conserva.
     const accumulatedTotal = truncateCents(
-      stats.productionAdjusted + stats.freeMoney + (stats.absences === 0 ? state.config.attendanceBonus : 0)
+      stats.productionAdjusted + stats.freeMoney + (stats.absences === 0 ? state.config.attendanceBonus : 0) + estimatedExtraAdvances
     );
-    // Referencia conjunta provisional: $40 por 2.000 lb, sin incorporarla a ningún total.
-    const estimatedExtraAdvances = Math.round(stats.totalLb * (40 / 2000) * 100) / 100;
     const realTotal = Number(real.fortnight || 0) + Number(real.monthEnd || 0);
 
     $("#view-dashboard").innerHTML = `
@@ -195,7 +195,8 @@
             Libres: ${stats.freeDays} × $${formatMoney(state.config.freeDayRate)} = $${formatMoney(stats.freeMoney)}
             + producción acumulada $${formatMoney(stats.productionAdjusted)}
             + producción futura estimada $${formatMoney(projectedFutureProduction)}
-            ${stats.absences === 0 ? `+ $${formatMoney(state.config.attendanceBonus)} de asistencia` : " · sin bono de asistencia por faltas"}.
+            ${stats.absences === 0 ? `+ $${formatMoney(state.config.attendanceBonus)} de asistencia` : " · sin bono de asistencia por faltas"}
+            + avance 25 y avance 50 estimados $${formatMoney(estimatedExtraAdvances)}.
           </p>
         </div>
       </div>
@@ -234,7 +235,7 @@
           </div>
           <div class="projection-box">
             <div class="projection-main">
-              <div class="tiny">Total · producción + libres + bono</div>
+              <div class="tiny">Total · producción + libres + bono + avances</div>
               <div class="projection-value">${money(accumulatedTotal)}</div>
             </div>
             ${projectionLine("Producción acumulada", money(stats.productionAdjusted))}
@@ -245,6 +246,7 @@
             ${projectionLine("Faltas", stats.absences)}
             ${projectionLine("Días trabajables restantes", stats.remainingWorkableDays)}
             ${projectionLine("Bono asistencia", stats.absences === 0 ? money(state.config.attendanceBonus) : "$0,00")}
+            ${projectionLine("Avance 25 y avance 50 (estimación conjunta)", money(estimatedExtraAdvances))}
           </div>
         </div>
       </div>
@@ -253,13 +255,13 @@
         <div class="section-head">
           <div>
             <div class="section-title">Aviso · avances 25 y 50</div>
-            <div class="tiny">Extra aproximado del período · no incluido en los totales</div>
+            <div class="tiny">Estimación conjunta incluida en los totales</div>
           </div>
         </div>
         <div class="projection-box">
           ${projectionLine("Libras registradas", `${formatNumber(stats.totalLb)} lb`)}
           ${projectionLine("Extra conjunto estimado", money(estimatedExtraAdvances))}
-          <p class="notice">Los avances 25 y 50 no están incluidos en el total acumulado ni en la proyección superior. Referencia provisional conjunta: 2.000 lb ≈ $40,00 (1.000 lb ≈ $20,00). Se calcula solo con las libras registradas del período, sin proyectar libras futuras. No es una tarifa confirmada ni un pago recibido; queda pendiente comprobar el pago de fin de mes y cómo se calcula cada avance antes de incorporarlos a los totales.</p>
+          <p class="notice">La estimación conjunta de avance 25 y avance 50 se suma una sola vez al total acumulado y una sola vez a la proyección superior. Referencia provisional: 2.000 lb ≈ $40,00 (1.000 lb ≈ $20,00), calculada solo con las libras registradas del período. No se proyectan avances sobre libras futuras. El importe individual de cada avance queda pendiente de verificar; esta estimación no registra dinero recibido.</p>
         </div>
       </div>
 
