@@ -9,3 +9,9 @@ La barra inferior de Android se oculta y se puede recuperar deslizando desde el 
 ## Compilar
 
 Instala Android SDK Build Tools 35.0.0, Android platform 35 y JDK 17. Ejecuta `bash android/build.sh` con `PELADO_BUILD_TOOLS` y `PELADO_ANDROID_JAR` apuntando a sus rutas. El resultado está alineado y sin firmar. Firma con `apksigner` y una clave privada conservada fuera del repositorio. Nunca publiques el almacén de claves ni su contraseña. El mismo certificado debe usarse en futuras versiones para actualizar sin desinstalar.
+
+## Versión 1.1.0
+
+Versión de Android 2 (versionName 1.1.0), con importación de producción Excel al calendario, borrado por período y estimación conjunta de avances incluida en el dashboard. `daily-import.js` forma parte de los recursos obligatorios de compilación. Incluye un aviso de estimación orientativa sin margen de error máximo garantizado. Una cifra fija de 5 % no se presenta como garantía de precisión.
+
+La APK 1.1.0 se verificó con apksigner y con el mismo certificado de la APK 1.0.0. Se comprobaron los archivos internos frente al código web, las referencias de recursos y las pruebas automatizadas de cálculo e importación. Queda pendiente la instalación y comprobación en un teléfono físico. La actualización requiere instalar esta nueva APK; GitHub Pages no actualiza los recursos internos de la APK instalada.

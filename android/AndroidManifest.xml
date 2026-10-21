@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.billy.pelado" android:versionCode="1" android:versionName="1.0.0">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.billy.pelado" android:versionCode="2" android:versionName="1.1.0">
   <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="35"/>
   <uses-permission android:name="android.permission.INTERNET"/>
   <application android:label="Pelado" android:icon="@drawable/ic_pelado" android:theme="@style/AppTheme" android:allowBackup="false" android:usesCleartextTraffic="false" android:supportsRtl="true">

@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 : "${PELADO_ANDROID_JAR:?Set PELADO_ANDROID_JAR to platform android.jar}"
 out="$PWD/android/build"
 mkdir -p "$out/classes" "$out/dex" "$out/assets"
-for file in index.html style.css variables.css core.js app.js display.js variables.js remote-config.js excel.js excel-insights.js logo.svg xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js LICENSE-AutoTable.txt LICENSE-SheetJS.txt LICENSE-jsPDF.txt; do
+for file in index.html style.css variables.css core.js app.js display.js variables.js remote-config.js excel.js excel-insights.js daily-import.js logo.svg xlsx.full.min.js jspdf.umd.min.js jspdf.plugin.autotable.min.js LICENSE-AutoTable.txt LICENSE-SheetJS.txt LICENSE-jsPDF.txt; do
   source_path="$file"
   if [[ ! -f "$source_path" ]]; then
     for folder in js css vendor assets; do

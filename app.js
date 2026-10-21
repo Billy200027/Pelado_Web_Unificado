@@ -201,6 +201,8 @@
         </div>
       </div>
 
+      <p class="notice">Estimación orientativa, sin margen de error máximo garantizado. El rol de pago puede incluir descuentos y ajustes adicionales. Revisa horas, turnos y días libres para comparar importes equivalentes.</p>
+
       <div class="stats-grid">
         ${statCard("Producción", money(stats.productionAdjusted), "Después de descuentos por faltas")}
         ${statCard("Promedio diario", money(stats.average), `${stats.workedDays} días trabajados`)}
