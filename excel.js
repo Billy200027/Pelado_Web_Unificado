@@ -12,7 +12,8 @@ function excelDate(v,date1904=false){if(v instanceof Date)return PeladoCore.date
  const s=String(v??'').trim();let m=s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[ T].*)?$/);let out;if(m)out=`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;else{m=s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:\s.*)?$/);if(m)out=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;}try{PeladoCore.parseDate(out||'');return out;}catch{return null;}}
 function time(v){if(v===''||v==null)return '';if(typeof v==='string'&&/^\d+(\.\d+)?$/.test(v.trim()))v=Number(v);if(typeof v==='number'){const minutes=Math.round((v-Math.floor(v))*1440)%1440;return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}const m=String(v).match(/(?:^|[ T])(\d{1,2}):(\d{2})(?::\d{2})?(?:\s*(AM|PM))?$/i);if(!m)return '';let h=Number(m[1]);if(m[3])h=h%12+(/pm/i.test(m[3])?12:0);return h<24&&Number(m[2])<60?`${String(h).padStart(2,'0')}:${m[2]}`:'';}
 // Las tallas de venta suelen ser rangos (31/40). No son tallas nuevas.
-function excelCategory(size, sourceCategory) {
+function excelCategory(size, sourceCategory, rate) {
+ if(Number.isFinite(rate)&&rate>0&&rate<0.11)return "PCC / tijera";
  const value=String(size??'').trim().replace(/\.$/,'');
  const range=value.match(/^(\d+)\s*\/\s*\d+$/);
  const known=PeladoCore.category(range ? range[1] : value);
@@ -59,7 +60,7 @@ function parseRows(grid,{date1904=false}={}) {
    const rate=numeric(get('rate')),pay=numeric(get('pay')),size=String(get('size')).trim(),sourceCategory=String(get('sourceCategory'));
    if(get('pay')!==''&&pay===null)warnings.push(`Fila ${sourceRow}: pago no numérico; no se calcula uno.`);
    rows.push({code,employee,date:date||'',product,size,sourceCategory,
-     category:pounds===null?'Concepto sin libras':excelCategory(size,sourceCategory),
+     category:pounds===null?'Concepto sin libras':excelCategory(size,sourceCategory,rate),
      entry:time(get('entry')),exit:time(get('exit')),rawEntry:String(get('entry')),rawExit:String(get('exit')),
      entryDate:excelDate(get('entry'),date1904),exitDate:excelDate(get('exit'),date1904),
      entryTimestamp:timestamp(get('entry'),date1904),exitTimestamp:timestamp(get('exit'),date1904),
@@ -150,7 +151,7 @@ document.addEventListener('DOMContentLoaded',()=>{
      data=stored.map(r=>({...r,pounds:numeric(r.pounds),rate:numeric(r.rate),pay:numeric(r.pay),
        date:excelDate(typeof r.date==='string'&&/^\d{5}(\.\d+)?$/.test(r.date)?Number(r.date):r.date)||'',
        sourceCategory:r.sourceCategory||r.category,
-       category:numeric(r.pounds)===null?'Concepto sin libras':excelCategory(r.size,r.sourceCategory||r.category),
+       category:numeric(r.pounds)===null?'Concepto sin libras':excelCategory(r.size,r.sourceCategory||r.category,numeric(r.rate)),
        entry:time(r.entry),exit:time(r.exit)}));
      warnings=['Análisis restaurado. Para enviar el Excel original debes volver a seleccionarlo.'];setupFilters();
    }

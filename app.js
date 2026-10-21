@@ -405,7 +405,7 @@
       <div class="section-head">
         <div>
           <div class="eyebrow">Configuración</div>
-          <h2>Valores de cálculo</h2>
+          <h2>Valores de cálculo</h2><p class="tiny">Pelado · versión 1.1.2 · corrección PCC</p>
           <p class="muted">Los cambios recalculan TODAS las estimaciones históricas, como en el original. Los pagos reales no cambian.</p>
         </div>
       </div>
@@ -940,6 +940,24 @@
       window.PeladoDaily.openPeriod(period);
       toast(`${added} días guardados; ${skipped} existentes conservados. Período ${period}-21 al ${PeladoCore.dateKey(new Date(state.currentYear,state.currentMonth+1,20,12))}.${overwritten?' El JSON descargado es el respaldo anterior.':''}`);
       return {added,skipped,overwritten};
+    },
+    repairPCC(period, records) {
+      if(!/^\d{4}-\d{2}$/.test(period))throw Error('Período inválido.');
+      const next=structuredClone(state.months);let updated=0,skipped=0;
+      for(const input of records){
+        PeladoCore.parseDate(input.date);
+        if(PeladoCore.periodOf(input.date)!==period)throw Error('Fecha fuera del período.');
+        if(!Number.isFinite(input.libras)||input.libras<=0||PeladoCore.keys.some(k=>!Number.isInteger(input[k])||input[k]<0))throw Error('Producción inválida.');
+        if(!input.adicional)continue;
+        const previous=next[period]?.days[input.date];
+        if(previous?.type!=='trabajado'||!Number.isFinite(previous.libras)||Math.abs(previous.libras-input.libras)>=0.005){skipped++;continue;}
+        if(PeladoCore.keys.every(k=>(previous[k]||0)===input[k]))continue;
+        next[period].days[input.date]={...previous,...Object.fromEntries(PeladoCore.keys.map(k=>[k,input[k]]))};updated++;
+      }
+      if(updated){exportBackup();save(STORAGE_KEYS.months,next);state.months=next;}
+      window.PeladoDaily.openPeriod(period);
+      toast(`${updated} días corregidos para PCC; ${skipped} pendientes de revisión. Horas, turnos y feriados conservados.`);
+      return {updated,skipped};
     },
     deletePeriod(period) {
       if(!state.months[period])return;

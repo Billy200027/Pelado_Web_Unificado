@@ -4,11 +4,12 @@ const vm=require('node:vm');
 const {JSDOM}=require('jsdom');
 const path=require('node:path');
 const base=path.resolve(__dirname,'..');
-function boot(){
+function boot(seed){
  const html=fs.readFileSync(path.join(base,'index.html'),'utf8').replace(/<script[\s\S]*?<\/script>/g,'');
  const dom=new JSDOM(html,{url:'https://example.com/pelado/',runScripts:'outside-only'}),w=dom.window;
  w.structuredClone=structuredClone;w.scrollTo=()=>{};w.confirm=()=>true;w.alert=()=>{};
  w.URL.createObjectURL=()=> 'blob:backup';w.URL.revokeObjectURL=()=>{};w.HTMLAnchorElement.prototype.click=function(){};
+ if(seed)w.localStorage.setItem('pelado_periods_v2',JSON.stringify(seed));
  w.localStorage.setItem('pelado_profile_v1',JSON.stringify({name:'QA',age:25}));
  for(const name of ['core.js','variables.js','app.js','excel-insights.js','excel.js','daily-import.js'])vm.runInContext(fs.readFileSync(path.join(base,name),'utf8'),dom.getInternalVMContext());
  w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
@@ -59,5 +60,23 @@ w.PeladoDaily.deletePeriod('2026-08');snapshot=w.PeladoDaily.snapshot();
 assert.equal(Object.keys(snapshot.months['2026-08']?.days||{}).length,0);
 assert.equal(snapshot.months['2026-09'].days['2026-09-21'].libras,20);
 assert.equal(JSON.parse(w.localStorage.getItem('pelado_period_payments_v2'))['2026-08'].fortnight,241);
+
+// Regresión exacta de las capturas: 148,08 lb, 60 lb a 0,08 mal asignadas a grande.
+const previous={date:'2026-08-27',type:'trabajado',grande:20,mediano:9,pequeno:0,adicional:0,libras:148.08,shift:'noche',holiday:true,hoursEnabled:true,startTime:'18:00',endTime:'20:00',nextDay:false};
+const repairBoot=boot({'2026-08':{days:{'2026-08-27':previous}}});const rw=repairBoot.w;
+const grid=[['Cod. Empleado','Empleado','Fecha','Producto','Talla Vta','Categoría de Talla','Entrada Songa','Salida Songa','Libras Peladas','Rend. Mensual','Valor Tarifa','Valor Pago'],
+ ['36546','QA','2026/08/27','MEDIANO A','31/35','MEDIANO','','',25.2,'',.14,3.53],
+ ['36546','QA','2026/08/27','PORTICO EZ PEEL','16/20','GRANDE','','',60,'',.08,4.8],
+ ['36546','QA','2026/08/27','GRANDE B','16/20','GRANDE','','',42.72,'',.11,4.70],
+ ['36546','QA','2026/08/27','MEDIANO B','41/50','MEDIANO','','',20.16,'',.14,2.82]];
+const parsed=rw.PeladoExcel.parseRows(grid).rows;assert.equal(parsed[1].category,'PCC / tijera','el informe reconoce la tarifa de la captura');
+rw.PeladoDailyImport.update(parsed);assert.equal(rw.document.querySelector('#dailyRepair').disabled,false);
+rw.document.querySelector('#dailyRepair').click();
+let repaired=rw.PeladoDaily.snapshot().months['2026-08'].days['2026-08-27'];
+assert.equal(repaired.grande,8);assert.equal(repaired.mediano,9);assert.equal(repaired.adicional,12);assert.equal(repaired.libras,148.08);
+for(const k of ['shift','holiday','hoursEnabled','startTime','endTime','nextDay'])assert.equal(repaired[k],previous[k],'se conserva '+k);
+const repairPlan=rw.PeladoDailyImport.plan(parsed,'36546','QA','2026-08');assert.equal(rw.PeladoDaily.repairPCC('2026-08',repairPlan.records).updated,0,'repetir no duplica');
+assert.equal(rw.PeladoDaily.repairPCC('2026-08',[{...repairPlan.records[0],libras:149}]).skipped,1,'no modifica días con libras distintas');
+repairBoot.dom.window.close();
 console.log('Importación, redondeo, cortes por fecha, edición, conflictos, guardado atómico y borrado por período: OK');
 dom.window.close();
